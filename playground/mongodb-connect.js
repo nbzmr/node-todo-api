@@ -37,5 +37,5 @@ MongoClient.connect('mongodb://localhost:27017/todoApp', (err, client) => {
         console.log(result.ops[0]._id.getTimestamp())
     })
 
-    client.close()
+    // client.close()
 })
