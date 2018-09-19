@@ -1,8 +1,13 @@
 const mongoose = require('mongoose')
 
 mongoose.Promise = global.Promise
-// mongoose.connect('mongodb://localhost:27017/todoApp')
-mongoose.connect('mongodb://todosuser:hjk786dfg@ds131151.mlab.com:31151/todos')
+const port = {
+    local: 'mongodb://localhost:27017/todoApp',
+    mlab: 'mongodb://todosuser:hjk786dfg@ds131151.mlab.com:31151/todos'
+}
+
+mongoose.connect(port.mlab, {useNewUrlParser: true} || local, {useNewUrlParser: true})
+
 module.exports = {
     mongoose
 }
