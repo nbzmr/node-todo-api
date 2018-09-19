@@ -82,7 +82,7 @@ describe('get /todos', () => {
     })
 })
 
-describe('get /todos:id', () => {
+describe('get /todos/:id', () => {
     it('should be the target todo', (done) => {
         request(app)
         .get(`/todos/${testTodos[1]._id.toHexString()}`)
@@ -103,6 +103,48 @@ describe('get /todos:id', () => {
     it('should be 404 for cant find doc', (done) => {
         request(app)
         .get(`/todos/${new ObjectID}`)
+        .expect(404)
+        .end(done)
+    })
+})
+
+describe('delete /todo/:id', () => {
+    it('should remove the target document', (done) => {
+        request(app)
+        .delete(`/todos/${testTodos[1]._id.toHexString()}`)
+        .expect(200)
+        .expect((res) => {
+            expect(res.body.text).toBe(testTodos[1].text)
+        })
+        .end((err, res) => {
+            if (err) {
+                done(err)
+                return
+            }
+
+            todo.findById({
+                _id: testTodos[1]._id
+            })
+            .then((doc) => {
+                expect(doc).toNotExist()
+                done()
+            })
+            .catch((err) => {
+                done(err)
+            })
+        })
+    })
+
+    it('should be 404 because invaid id', (done) => {
+        request(app)
+        .delete('/todos/123')
+        .expect(404)
+        .end(done)
+    })
+
+    it('should be 404 because id is not exist', (done) => {
+        request(app)
+        .delete(`/todos/${new ObjectID}`)
         .expect(404)
         .end(done)
     })
