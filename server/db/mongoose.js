@@ -2,7 +2,7 @@ const mongoose = require('mongoose')
 
 mongoose.Promise = global.Promise
 // mongoose.connect('mongodb://localhost:27017/todoApp', {useNewUrlParser: true})
-mongoose.connect('mongodb://todosuser:dief/.,dFF345@ds131151.mlab.com:31151/todos', {useNewUrlParser: true})
+mongoose.connect('mongodb://todosuser:dief/.,dFF345@ds131151.mlab.com:31151/todos',)
 module.exports = {
     mongoose
 }
