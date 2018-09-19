@@ -4,9 +4,7 @@
   "description": "",
   "main": "index.js",
   "engine": {
-    "node": "10.7.0",
-    "npm": "6.1.x",
-    "yarn": "1.x.x"
+    "node": "10.7.0"
   },
   "scripts": {
     "start": "node server/server",
