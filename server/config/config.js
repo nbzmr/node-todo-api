@@ -1,4 +1,4 @@
-const env = process.env.NODE_ENV
+const env = process.env.NODE_ENV || 'development'
 
 if (env === 'production') {
     process.env.MONGODB_URI = 'mongodb://todosuser:hjk786dfg@ds131151.mlab.com:31151/todos'
