@@ -7,7 +7,7 @@
     "node": "10.7.0"
   },
   "scripts": {
-    "start": "export NODE_ENV=production || SET \"NODE_ENV=production\" && server/server",
+    "start": "server/server",
     "test": "export NODE_ENV=test || SET \"NODE_ENV=test\" && mocha server/**/*.test.js",
     "tests": "nodemon --exec \"npm test\"",
     "run": "export NODE_ENV=development || SET \"NODE_ENV=development\" && node server/server",
