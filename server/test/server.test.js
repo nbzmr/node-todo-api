@@ -6,10 +6,13 @@ const {todo} = require('./../model/todo')
 const {app} = require('./../server')
 
 const testTodos = [{
+    _id: new ObjectID,
     text: 'first'
 }, {
     _id: new ObjectID,
-    text: 'second'
+    text: 'second',
+    completed: true,
+    completedAt: 123
 }]
 
 beforeEach((done) => {
@@ -146,6 +149,40 @@ describe('delete /todo/:id', () => {
         request(app)
         .delete(`/todos/${new ObjectID}`)
         .expect(404)
+        .end(done)
+    })
+})
+
+describe('patch /todos/:id', () => {
+    it('should update the todo', (done) => {
+        request(app)
+        .patch(`/todos/${testTodos[0]._id.toHexString()}`)
+        .send({
+            text: 'updated from mocha',
+            completed: true
+        })
+        .expect(200)
+        .expect((res) => {
+            expect(res.body.text).toBe('updated from mocha')
+            expect(res.body.completed).toBe(true)
+            expect(res.body.completedAt).toBeA('number')
+        })
+        .end(done)
+    })
+
+    it('should update the text and remove the completedAt when todo is not completed', (done) => {
+        request(app)
+        .patch(`/todos/${testTodos[1]._id.toHexString()}`)
+        .send({
+            text: 'updated from mocha',
+            completed: false
+        })
+        .expect(200)
+        .expect((res) => {
+            expect(res.body.text).toBe('updated from mocha')
+            expect(res.body.completed).toBe(false)
+            expect(res.body.completedAt).toNotExist()
+        })
         .end(done)
     })
 })
