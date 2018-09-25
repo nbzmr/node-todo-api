@@ -4,22 +4,24 @@ const express = require('express')
 const bodyParser = require('body-parser')
 const {ObjectID} = require('mongodb')
 const _ = require('lodash')
+const bcrypt = require('bcryptjs')
 
-const {mongoose} = require('./db/mongoose')
-const {todo} = require('./model/todo')
+const {Todo} = require('./model/todo')
 const {User} = require('./model/user')
 const {authenticate} = require('./middleware/authenticate')
+const {mognoose} = require('./db/mongoose')
 
 const app = express()
 const port = process.env.PORT
 
 app.use(bodyParser.json())
 
-app.post('/todos', (req, res) => {
-    const newTodo = new todo({
-        text: req.body.text
+app.post('/todos', authenticate, (req, res) => {
+    const newTodo = new Todo({
+        text: req.body.text,
+        _creator: req.user._id
     })
-
+    
     newTodo.save().then((doc) => {
         res.send(doc)
     }, (err) => {
@@ -27,15 +29,17 @@ app.post('/todos', (req, res) => {
     })
 })
 
-app.get('/todos', (req, res) => {
-    todo.find().then((todos) => {
+app.get('/todos', authenticate, (req, res) => {
+    Todo.find({
+        _creator: req.user._id
+    }).then((todos) => {
         res.send(todos)
     }, (err) => {
         res.status(400).send('invalid request')
     })
 })
 
-app.get('/todos/:id', (req, res) => {
+app.get('/todos/:id', authenticate, (req, res) => {
     const id = req.params.id
 
     if (!ObjectID.isValid(id)) {
@@ -43,7 +47,34 @@ app.get('/todos/:id', (req, res) => {
         return
     }
 
-    todo.findById(id)
+    Todo.find({
+        _id: id,
+        _creator: req.user._id
+    })
+    .then((doc) => {
+        if (doc.length === 0) {
+            res.status(404).send()
+            return
+        }
+
+        res.send(doc)
+    })
+    .catch((err) => {
+        res.status(400).send()
+    })
+})
+
+app.delete('/todos/:id', authenticate, (req, res) => {
+    const id = req.params.id
+    if (!ObjectID.isValid(id)) {
+        res.status(404).send()
+        return
+    }
+
+    Todo.findOneAndRemove({
+        _id: id,
+        _creator: req.user._id
+    })
     .then((doc) => {
         if (!doc) {
             res.status(404).send()
@@ -57,28 +88,7 @@ app.get('/todos/:id', (req, res) => {
     })
 })
 
-app.delete('/todos/:id', (req, res) => {
-    const id = req.params.id
-    if (!ObjectID.isValid(id)) {
-        res.status(404).send()
-        return
-    }
-
-    todo.findByIdAndRemove(id)
-    .then((doc) => {
-        if (!doc) {
-            res.status(404).send()
-            return
-        }
-
-        res.send(doc)
-    })
-    .catch((err) => {
-        res.status(400).send()
-    })
-})
-
-app.patch('/todos/:id', (req, res) => {
+app.patch('/todos/:id', authenticate, (req, res) => {
     const id = req.params.id
 
     if (!ObjectID.isValid(id)) {
@@ -94,7 +104,10 @@ app.patch('/todos/:id', (req, res) => {
         body.completedAt = null
     }
 
-    todo.findByIdAndUpdate(id, body, {
+    Todo.findOneAndUpdate({
+        _id: id,
+        _creator: req.user._id 
+    }, body, {
         new: true
     })
     .then((doc) => {
@@ -113,7 +126,7 @@ app.patch('/todos/:id', (req, res) => {
 app.post('/users', (req, res) => {
     const body = _.pick(req.body, ['email', 'password'])
     const newUser = new User(body)
-
+    
     newUser.save()
     .then(() => {
         return newUser.generateAuthToken()
@@ -121,13 +134,33 @@ app.post('/users', (req, res) => {
     .then((token) => {
         res.header('x-auth', token).send(newUser)
     })
-    .catch((err) => {
-        res.status(404).send()
+    .catch(() => {
+        res.status(400).send()
     })
 })
 
 app.get('/users/me', authenticate, (req, res) => {
     res.send(req.user)  
+})
+
+app.post('/users/login', (req, res) => {
+    User.findByCredentials(req.body.email, req.body.password)
+    .then((user) => {
+        res.set('x-auth', user.token).send(user.user)
+    })
+    .catch(() => {
+        res.status(400).send()
+    })
+})
+
+app.delete('/users/me/token', authenticate, (req, res) => {
+    req.user.removeToken(req.token, req.user)
+    .then(() => {
+        res.send()
+    })
+    .catch(() => {
+        res.status(400).send()
+    })
 })
 
 app.listen(port, () => {

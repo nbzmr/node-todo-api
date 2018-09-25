@@ -60,11 +60,12 @@ userSchema.methods.toJSON = function () {
 
 userSchema.methods.generateAuthToken = function () {
     const user = this
+    
     const access = 'auth'
     const token = jwt.sign({
         _id: user._id.toHexString(),
         access: access
-    }, 'somesalt').toString()
+    }, process.env.SALT).toString()
     
     user.tokens = user.tokens.concat([{access, token}])
 
@@ -75,22 +76,58 @@ userSchema.methods.generateAuthToken = function () {
 
 userSchema.statics.findByToken = function (token) {
     const User = this
+    
     let decoded
 
     try {
-        decoded = jwt.verify(token, 'somesalt')
+        decoded = jwt.verify(token, process.env.SALT)
     } catch (err) {
         return new Promise((resolve, reject) => {
             reject('error message')
         })
-
-        return Promise.reject('error message')
     }
 
     return User.findOne({
         _id: decoded._id,
         'tokens.access': decoded.access,
         'tokens.token': token
+    })
+}
+
+userSchema.statics.findByCredentials = function (email, password) {
+    const User = this
+    
+    return User.findOne({email})
+    .then((user) => {
+        if (!user) {
+            return Promise.reject()
+        }
+
+        return new Promise((resolve, reject) => {
+            bcrypt.compare(password, user.password, (err, res) => {
+                if (res === false) {
+                    reject()
+                } else {
+                    user.generateAuthToken()
+                    .then((token) => {
+                        resolve({
+                            token,
+                            user
+                        })
+                    })
+                }
+            })
+        })
+    })
+}
+
+userSchema.methods.removeToken = (token, user) => {
+    return user.update({
+        $pull: {
+            tokens: {
+                token: token
+            }
+        }
     })
 }
 
